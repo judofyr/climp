@@ -1,0 +1,11 @@
+{
+  "extends": "@tsconfig/recommended/tsconfig.json",
+  "compilerOptions": {
+    "checkJs": true,
+    "allowJs": true,
+    "module": "esnext",
+    "noEmit": true,
+    "moduleResolution": "Node"
+  },
+  "include": ["src/*", "test/*"]
+}
