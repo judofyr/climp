@@ -53,7 +53,7 @@ export class CLI {
     for (let current; (current = parser.current) !== undefined; ) {
       try {
         let arg = this._resolveArg(parser, current);
-        await arg.process(this, parser, current);
+        await arg.process(this, parser);
       } catch (err) {
         // TODO: How to handle errors?
         throw err;

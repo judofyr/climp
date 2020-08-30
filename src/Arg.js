@@ -13,7 +13,7 @@ export class Arg {
 
   /**
    * Defines the runner for the argument. Only a single runner can be defined.
-   * @param {(cli: CLI, parser: ArgParser, name: string) => void | Promise<void>} runner
+   * @param {(cli: CLI, parser: ArgParser) => void | Promise<void>} runner
    */
   run(runner) {
     if (this._runner) throw new Error("duplicate runner configured");
@@ -21,17 +21,42 @@ export class Arg {
   }
 
   /**
+   * Declares the argument as accepting a value.
+   * @param {(value: string) => void | Promise<void>} runner
+   */
+  runWithValue(runner) {
+    this.expectsValue = true;
+
+    this.run((_cli, parser) => {
+      let value = parser.readValue();
+      return runner(value);
+    });
+  }
+
+  /**
+   * Declares the argument as accepting an optional value.
+   * @param {(value: string | undefined) => void | Promise<void>} runner
+   */
+  runWithOptionalValue(runner) {
+    this.expectsValue = true;
+
+    this.run((_cli, parser) => {
+      let value = parser.readOptionalValue();
+      return runner(value);
+    });
+  }
+
+  /**
    * Internal method used for processing the argument.
    * @param {CLI} cli
    * @param {ArgParser} parser
-   * @param {string} name
    */
-  async process(cli, parser, name) {
+  async process(cli, parser) {
     if (!this._runner) {
       throw new Error("unexpected argument");
     }
 
-    await this._runner(cli, parser, name);
+    await this._runner(cli, parser);
   }
 
   /**
@@ -54,11 +79,8 @@ export class Arg {
     /** @type Box<string> */
     let box = Box.empty();
 
-    this.expectsValue = true;
-
-    this.run((_cli, parser) => {
-      let str = parser.readValue();
-      box.setContent(str);
+    this.runWithValue((val) => {
+      box.setContent(val);
     });
 
     return box;
@@ -82,12 +104,11 @@ export class Arg {
 
     this.expectsValue = true;
 
-    this.run((_cli, parser) => {
-      let str = parser.readOptionalValue();
-      if (str === undefined) {
+    this.runWithOptionalValue((val) => {
+      if (val === undefined) {
         box.setContent(true);
       } else {
-        box.setContent(str);
+        box.setContent(val);
       }
     });
 
@@ -103,12 +124,9 @@ export class Arg {
     /** @type Box<string[]> */
     let box = Box.withDefault([]);
 
-    this.expectsValue = true;
-
-    this.run((_cli, parser) => {
-      let str = parser.readValue();
+    this.runWithValue((val) => {
       box.mutateContent((state) => {
-        state.push(str);
+        state.push(val);
       });
     });
 
