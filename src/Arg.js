@@ -15,34 +15,58 @@ export class Arg {
    * Defines the runner for the argument. Only a single runner can be defined.
    * @param {(cli: CLI, parser: ArgParser) => void | Promise<void>} runner
    */
-  run(runner) {
+  setRunner(runner) {
     if (this._runner) throw new Error("duplicate runner configured");
     this._runner = runner;
   }
 
   /**
-   * Declares the argument as accepting a value.
-   * @param {(value: string) => void | Promise<void>} runner
+   * Defines a runner which will be invoked immediately when the argument
+   * is given. This can be used to modify the CLI object to tweak argument
+   * parsing on the fly.
+   *
+   * @param {(cli: CLI) => void | Promise<void>} runner
    */
-  runWithValue(runner) {
+  accept(runner) {
+    this.setRunner((cli) => runner(cli));
+  }
+
+  /**
+   * Defines a runner which will be invoked _deferred_ when the the argument is given.
+   * Note that the runner is invoked after all argument parsing has occured.
+   *
+   * @param {(cli: CLI) => void | Promise<void>} runner
+   */
+  do(runner) {
+    this.setRunner((cli) => cli.do(runner));
+  }
+
+  /**
+   * Defines a runner which will be invoked immediately when the argument
+   * is given a value.
+   *
+   * @param {(value: string, cli: CLI) => void | Promise<void>} runner
+   */
+  acceptValue(runner) {
     this.expectsValue = true;
 
-    this.run((_cli, parser) => {
+    this.setRunner((cli, parser) => {
       let value = parser.readValue();
-      return runner(value);
+      return runner(value, cli);
     });
   }
 
   /**
    * Declares the argument as accepting an optional value.
-   * @param {(value: string | undefined) => void | Promise<void>} runner
+   *
+   * @param {(value: string | undefined, cli: CLI) => void | Promise<void>} runner
    */
-  runWithOptionalValue(runner) {
+  acceptOptionalValue(runner) {
     this.expectsValue = true;
 
-    this.run((_cli, parser) => {
+    this.setRunner((cli, parser) => {
       let value = parser.readOptionalValue();
-      return runner(value);
+      return runner(value, cli);
     });
   }
 
@@ -65,7 +89,7 @@ export class Arg {
    * @param {(cli: CLI) => void} cb
    */
   command(cb) {
-    this.run((cli) => {
+    this.setRunner((cli) => {
       cb(cli);
     });
   }
@@ -79,7 +103,7 @@ export class Arg {
     /** @type Box<string> */
     let box = Box.empty();
 
-    this.runWithValue((val) => {
+    this.acceptValue((val) => {
       box.setContent(val);
     });
 
@@ -104,7 +128,7 @@ export class Arg {
 
     this.expectsValue = true;
 
-    this.runWithOptionalValue((val) => {
+    this.acceptOptionalValue((val) => {
       if (val === undefined) {
         box.setContent(true);
       } else {
@@ -124,7 +148,7 @@ export class Arg {
     /** @type Box<string[]> */
     let box = Box.withDefault([]);
 
-    this.runWithValue((val) => {
+    this.acceptValue((val) => {
       box.mutateContent((state) => {
         state.push(val);
       });
@@ -142,7 +166,7 @@ export class Arg {
     /** @type Box<boolean> */
     let box = Box.withDefault(false);
 
-    this.run(() => {
+    this.setRunner(() => {
       box.setContent(true);
     });
 
@@ -158,7 +182,7 @@ export class Arg {
     /** @type Box<number> */
     let box = Box.withDefault(0);
 
-    this.run(() => {
+    this.setRunner(() => {
       box.updateContent((state) => state + 1);
     });
 

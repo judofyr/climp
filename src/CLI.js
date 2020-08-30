@@ -11,7 +11,7 @@ export class CLI {
 
     this.rest = new Arg();
 
-    /** @type {Array<() => void | Promise<void>>} */
+    /** @type {Array<(cli: CLI) => void | Promise<void>>} */
     this.tasks = [];
 
     if (setup) setup(this);
@@ -19,7 +19,7 @@ export class CLI {
 
   /**
    *
-   * @param {() => void | Promise<void>} code
+   * @param {(cli: CLI) => void | Promise<void>} code
    */
   do(code) {
     this.tasks.push(code);
@@ -63,7 +63,7 @@ export class CLI {
 
   async processTasks() {
     for (let task of this.tasks) {
-      await task();
+      await task(this);
     }
   }
 
