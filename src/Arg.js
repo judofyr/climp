@@ -13,7 +13,7 @@ export class Arg {
 
   /**
    * Defines the runner for the argument. Only a single runner can be defined.
-   * @param {(cli: CLI, parser: ArgParser, name: string) => void} runner
+   * @param {(cli: CLI, parser: ArgParser, name: string) => void | Promise<void>} runner
    */
   run(runner) {
     if (this._runner) throw new Error("duplicate runner configured");
@@ -26,12 +26,12 @@ export class Arg {
    * @param {ArgParser} parser
    * @param {string} name
    */
-  process(cli, parser, name) {
+  async process(cli, parser, name) {
     if (!this._runner) {
       throw new Error("unexpected argument");
     }
 
-    this._runner(cli, parser, name);
+    await this._runner(cli, parser, name);
   }
 
   /**

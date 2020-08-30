@@ -11,7 +11,7 @@ export class CLI {
 
     this.rest = new Arg();
 
-    /** @type {Array<() => void>} */
+    /** @type {Array<() => void | Promise<void>>} */
     this.tasks = [];
 
     if (setup) setup(this);
@@ -19,7 +19,7 @@ export class CLI {
 
   /**
    *
-   * @param {() => void} code
+   * @param {() => void | Promise<void>} code
    */
   do(code) {
     this.tasks.push(code);
@@ -40,20 +40,20 @@ export class CLI {
   /**
    * @param {string[]} argv
    */
-  run(argv) {
-    this.processArgUntilError(argv);
-    this.processTasks();
+  async run(argv) {
+    await this.processArgUntilError(argv);
+    await this.processTasks();
   }
 
   /**
    * @param {string[]} argv
    */
-  processArgUntilError(argv) {
+  async processArgUntilError(argv) {
     let parser = new ArgParser(argv);
     for (let current; (current = parser.current) !== undefined; ) {
       try {
         let arg = this._resolveArg(parser, current);
-        arg.process(this, parser, current);
+        await arg.process(this, parser, current);
       } catch (err) {
         // TODO: How to handle errors?
         throw err;
@@ -61,9 +61,9 @@ export class CLI {
     }
   }
 
-  processTasks() {
+  async processTasks() {
     for (let task of this.tasks) {
-      task();
+      await task();
     }
   }
 
